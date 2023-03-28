@@ -49,7 +49,7 @@ def get_exp(node):
             return exp
         
         case "Sort":
-            exp = "The result is sorted using the key " + node['Sort Key']
+            exp = "The result is sorted using the key " + str(node['Sort Key'])
             if "DESC" in node['Sort Key']:
                 exp = exp + " in descending order"
             if "INC" in node['Sort Key']:
@@ -71,7 +71,22 @@ def get_exp(node):
             return exp
 
         case "Aggregate":
-            exp = ''
+            if node['Strategy'] == "Hashed":
+                exp = "Aggregation was executed by Hashing on all rows of relation based on the following keys: "
+                for i in node['Group Key']:
+                    exp = exp + str(i) + ','
+                exp = exp + ". The results are aggregated into buckets according to the hashed key."
+                return exp
+            elif node['Strategy'] == "Plain":
+                exp = "Normal Aggregation was executed on the result"
+                return exp
+            elif node['Strategy'] == 'Sorted':
+                exp = "Aggregation was executed by sorting all rows of relation based on keys. "
+                if "Group Key" in node['Strategy']:
+                    exp = exp + "The aggregated keys are: "
+                    for i in node['Group Key']:
+                        exp = exp + str(i) + ','
+                return exp
             return exp
 
         case "Materialize":
@@ -88,7 +103,7 @@ def get_exp(node):
             exp = "An Append operation was executed. This combines the results of multiple operations into a single result set"
             return exp
         case "CTE Scan":
-            exp = "A CTE Scan was executed on the relation " + node['CTE Name']
+            exp = "A CTE Scan was executed on the relation " + str(node['CTE Name'])
             if "Index Cond" in node:
                 exp = exp + " with condition " + node['Index Cond']
             if "Filter" in node:
@@ -98,7 +113,7 @@ def get_exp(node):
         case "Function Scan":
             exp = "The Function " + node['Function Name'] + " was executed and returns result as a set of rows"
         case "SetOp":
-            exp = "SetOp operation with the " + node["Command"] + " command was executed between 2 scanned relations"
+            exp = "SetOp operation with the " + str(node["Command"]) + " command was executed between 2 scanned relations"
             return exp
 
         case "WindowAgg":
@@ -129,11 +144,11 @@ def get_exp(node):
             return exp
             
         case "Gather Merge":
-            exp = "Gather Merge operation was executed on the results from parallel sub operations."
+            exp = "Gather Merge operation was executed on the results from parallel sub operations. Order of the results is preserved."
             return exp
             
         case "Gather":
-            exp = "Gather operation was executed on the results from parallel sub operations."
+            exp = "Gather operation was executed on the results from parallel sub operations. Order of the results is not preserved."
             return exp
         case _:
             return node['Node Type']
