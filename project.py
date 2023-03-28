@@ -1,7 +1,7 @@
 from collections import deque
 import psycopg2
 
-from interface import App
+from interface_tkinter import App
 from explain import get_exp
 
 
