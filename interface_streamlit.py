@@ -4,6 +4,7 @@ from collections import deque
 import psycopg2
 from explain import *
 st.set_page_config(layout="wide")
+st.title("QEP Visualizer and Comparison")
 conn = psycopg2.connect(database="postgres",
                             host="localhost",
                             user="postgres",
@@ -16,7 +17,7 @@ col1, col2 = st.columns(2, gap="small")
 with col1:
     query1 = ""
     # Specify queries to be explained here
-    query1 = st.text_area('Enter query 1')
+    query1 = st.text_input('Enter query 1')
     if query1 != "":
         cursor.execute(extract_qp + query1)
         # get query plan in JSON format
@@ -61,7 +62,7 @@ extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) "
 with col2:
     query2 = ""
     # Specify queries to be explained here
-    query2 = st.text_area('Enter query 2')
+    query2 = st.text_input('Enter query 2')
     if query2 != "":
         cursor.execute(extract_qp + query2)
         # get query plan in JSON format
