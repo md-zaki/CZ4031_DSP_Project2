@@ -51,7 +51,7 @@ def test_func(cursor, app):
 
 if __name__ == "__main__":
     # connect to postgres
-    conn = psycopg2.connect(database="TPC-H",
+    conn = psycopg2.connect(database="postgres",
                             host="localhost",
                             user="postgres",
                             password="dspproject123",
