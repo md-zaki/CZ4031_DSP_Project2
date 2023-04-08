@@ -1,6 +1,7 @@
 
 from collections import deque
 import psycopg2
+import pydot
 
 def get_exp(node):
     # Function to return explanation of a certain node type
@@ -206,6 +207,44 @@ def main():
         print(str(count) + ". " + get_exp(i))
         print()
         count = count + 1
+
+
+def compare_graph_labels(graph1_str, graph2_str):
+    # Parse the Graphviz graphs from the input strings
+    graph1 = pydot.graph_from_dot_data(graph1_str)[0]
+    graph2 = pydot.graph_from_dot_data(graph2_str)[0]
+
+    # Get the labels of the nodes in each graph
+    graph1_labels = set([node.get_label() for node in graph1.get_nodes()])
+    graph2_labels = set([node.get_label() for node in graph2.get_nodes()])
+
+    # Find the labels present in graph1 but missing in graph2
+    missing_in_graph2 = graph1_labels - graph2_labels
+
+    # Find the labels present in graph2 but missing in graph1
+    missing_in_graph1 = graph2_labels - graph1_labels
+
+    # Return the missing labels for each graph
+    return missing_in_graph1, missing_in_graph2
+
+def highlight_node(dot_string,element):
+    # Find the node with label "Gather"
+    node_id = None
+    lines = dot_string.split('\n')
+    for line in lines:
+        if 'label='+str(element) in line:
+            node_id = line.split(' ')[0]
+            break
+    
+    # If the node is found, add a red fill color to it
+    if node_id is not None:
+        for i in range(len(lines)):
+            if node_id in lines[i]:
+                lines[i] = lines[i].replace(']', ' style=filled fillcolor=red];')
+                break
+    
+    # Return the modified dot string
+    return '\n'.join(lines)
 
 if __name__ == "__main__":
     main()
