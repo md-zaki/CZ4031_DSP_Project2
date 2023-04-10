@@ -287,6 +287,13 @@ def query_diff(q1, q2):
 
 
 def qep_diff_exp(missing1, missing2):
+    """
+        Parameters:
+            missing1 (set): set of operations not in QEP 1
+            missing2 (set): set of operations not in QEP 2
+        Returns:
+            exp_str1 (str): string of explanation of changes of operations between the 2 QEPs
+    """
     if(missing2):
         exp_str1 = 'The following operations from the original query plan: '
         for i in missing2:
