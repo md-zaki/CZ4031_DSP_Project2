@@ -2,16 +2,23 @@ import streamlit as st
 import graphviz
 from collections import deque
 import psycopg2
+import argparse
 from explain import *
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--db')
+parser.add_argument('--host')
+parser.add_argument('--user')
+parser.add_argument('--pwd')
+args = parser.parse_args()
 st.set_page_config(layout="wide")
 
-
 # connection parameters for postgres
-conn = psycopg2.connect(database="postgres",
-                            host="localhost",
-                            user="postgres",
-                            password="dspproject123",
+conn = psycopg2.connect(database=args.db,
+                            host=args.host,
+                            user=args.user,
+                            password=args.pwd,
                             port="5432")
 cursor = conn.cursor()
 # declare postgres extract qp string
@@ -159,8 +166,8 @@ with col1:
     try:
         with st.expander("QEP Tree of Original Query"):
                 # st.subheader("Query Execution Plan Tree from Postgres")
-                print("Q1")
-                print(graph_str1)
+                # print("Q1")
+                # print(graph_str1)
                 # # for i in qep_list1:
                 # #     st.write(i[0])
                 st.graphviz_chart(graph_str1)
@@ -170,8 +177,8 @@ with col2:
     try:
         with st.expander("QEP Tree of Evolved Query"):
                 # st.subheader("Query Execution Plan Tree from Postgres")
-                print("Q2")
-                print(graph_str2)
+                # print("Q2")
+                # print(graph_str2)
                 st.graphviz_chart(graph_str2)
     except:
         st.error("Please key in Evolved Query")
