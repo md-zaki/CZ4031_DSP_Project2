@@ -177,12 +177,14 @@ with col2:
         st.error("Please key in Evolved Query")
 
 # =============================================================================
-diff_str = qep_diff_exp(missing1, missing2)
-st.header("How the Query Execution Plans have evolved:")
-try:
-    st.write(diff_str)
-    st.write(changes_query)
-except:
-    pass
+
+
+with st.expander("How the Query Execution Plans have evolved:"):
+    try:
+        diff_str = qep_diff_exp(missing1, missing2)
+        st.write(diff_str)
+        st.write(changes_query)
+    except:
+        pass
 
 

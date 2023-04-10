@@ -209,7 +209,7 @@ def highlight_node(dot_string,element):
         for i in range(len(lines)):
             for node_id in node_id_arr:
                 if node_id in lines[i]:
-                    lines[i] = lines[i].replace(']', ' style=filled fillcolor=red];')
+                    lines[i] = lines[i].replace(']', ' style=filled fillcolor=yellow];')
                     
     
     # Return the modified dot string
@@ -281,7 +281,7 @@ def query_diff(q1, q2):
         comp_str = comp_str + 'FROM clause, '
     if str(where_clause1) != str(where_clause2):
         comp_str = comp_str + 'WHERE clause, '
-    comp_str = comp_str + 'of the Evolved Query'
+    comp_str = comp_str + 'of the Evolved Query.'
 
     return comp_str
 
@@ -296,7 +296,7 @@ def qep_diff_exp(missing1, missing2):
             exp_str1 = exp_str1 + 'the following operations: '
             for i in missing1:
                 exp_str1 = exp_str1 + str(i) + ', '
-            exp_str1 = exp_str1 + ' in the evolved query plan.'
+            exp_str1 = exp_str1 + ' in the evolved query plan'
     elif(missing1):
         exp_str1 = 'The following operations were added to the evolved query plan: '
         for i in missing1:
