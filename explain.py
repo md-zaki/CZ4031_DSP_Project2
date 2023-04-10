@@ -286,4 +286,27 @@ def query_diff(q1, q2):
     return comp_str
 
 
+def qep_diff_exp(missing1, missing2):
+    if(missing2):
+        exp_str1 = 'The following operations from the original query plan: '
+        for i in missing2:
+            exp_str1 = exp_str1 + str(i) + ', '
+        exp_str1 = exp_str1 + 'were replaced by '
+        if(missing1):
+            exp_str1 = exp_str1 + 'the following operations: '
+            for i in missing1:
+                exp_str1 = exp_str1 + str(i) + ', '
+            exp_str1 = exp_str1 + ' in the evolved query plan.'
+    elif(missing1):
+        exp_str1 = 'The following operations were added to the evolved query plan: '
+        for i in missing1:
+            exp_str1 = exp_str1 + str(i) + ', '
+
+    
+    return exp_str1
+
+
+
+
+
 

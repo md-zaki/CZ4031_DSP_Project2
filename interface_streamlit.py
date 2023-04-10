@@ -33,7 +33,7 @@ with col1:
         # get query plan in JSON format
         qep1 = cursor.fetchall()[0][0][0].get("Plan")
         # make lists of nodes and its sub plans
-        node_list = []
+        node_list1 = []
 
         # declare empty dot string of graph 1
         graph_str1 = ''''''
@@ -54,7 +54,7 @@ with col1:
                     parentnum = step
                     step = step + 1 # update graph index
                 
-                node_list.append(node) # append node type of subplan to node_list
+                node_list1.append(node) # append node type of subplan to node_list
 
                 if "Plans" in node:
                     
@@ -68,7 +68,7 @@ with col1:
 
         # ====================================================================================================================================================
         # Reverse the list
-        node_list.reverse()
+        node_list1.reverse()
 
         extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
         cursor.execute(extract_qp + query1)
@@ -78,7 +78,7 @@ with col1:
         count = 1
         with st.expander("Description of Original Query:"):
             # st.subheader("Description: ")
-            for i in node_list:
+            for i in node_list1:
                 st.write(str(count) + ". " + get_exp(i))
                 count = count + 1
         
@@ -93,7 +93,7 @@ with col2:
         # get query plan in JSON format
         qep2 = cursor.fetchall()[0][0][0].get("Plan")
 
-        node_list = [] # make lists of nodes and its sub plans
+        node_list2 = [] # make lists of nodes and its sub plans
         graph_str2 = ''''''
         graph_str2 = graph_str2 + 'digraph {'
 
@@ -112,7 +112,7 @@ with col2:
                     parentnum = step
                     step = step + 1
                 
-                node_list.append(node) # append node type of subplan to node_list
+                node_list2.append(node) # append node type of subplan to node_list
 
                 if "Plans" in node:
                     
@@ -126,7 +126,7 @@ with col2:
         graph_str2 = graph_str2 + '}' # close the dot string
         # ====================================================================================================================================================
         # Reverse the list
-        node_list.reverse()
+        node_list2.reverse()
 
         extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
         cursor.execute(extract_qp + query2)
@@ -135,7 +135,7 @@ with col2:
         # Print Explanation
         count = 1
         with st.expander("Description of Evolved Query:"):
-            for i in node_list:
+            for i in node_list2:
                 st.write(str(count) + ". " + get_exp(i))
                 count = count + 1
 
@@ -177,9 +177,10 @@ with col2:
         st.error("Please key in Evolved Query")
 
 # =============================================================================
-
-st.header("Differences")
+diff_str = qep_diff_exp(missing1, missing2)
+st.header("How the Query Execution Plans have evolved:")
 try:
+    st.write(diff_str)
     st.write(changes_query)
 except:
     pass
