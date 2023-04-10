@@ -4,7 +4,12 @@ import psycopg2
 import pydot
 
 def get_exp(node):
-    # Function to return explanation of a certain node type
+    """
+        Parameters:
+            node: Representing a subplan in JSON format
+        Returns:
+            exp (str): Explanation in natural language of node
+    """
     match node['Node Type']:
         
         case "Seq Scan":
@@ -153,63 +158,18 @@ def get_exp(node):
             return exp
         case _:
             return node['Node Type']
-            
-def main():
 
-    # connect to postgres
-    conn = psycopg2.connect(database="postgres",
-                            host="localhost",
-                            user="postgres",
-                            password="dspproject123",
-                            port="5432")
-    cursor = conn.cursor()
-
-    extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) "
-    # Specify queries to be explained here
-    print("Key in Query: ")
-    query = input()
-    cursor.execute(extract_qp + query)
-
-    # get query plan in JSON format
-    qep = cursor.fetchall()[0][0][0].get("Plan")
-    
-    # make lists of nodes and its sub plans
-    node_list = []
-    q = deque([qep])
-    while q:
-        for i in range(len(q)):
-            node = q.popleft()
-            node_list.append(node)
-            if "Plans" in node:
-                for child in node['Plans']:
-                    q.append(child)
-    # Reverse the list
-    node_list.reverse()
-
-    # Print Executed Query
-    print()
-    print("Query Executed: " + query)
-    print()
-
-    # Print Query Execution Plan Tree from Postgres
-    extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) "
-    cursor.execute(extract_qp + query)
-    qep_list1 = cursor.fetchall()
-    print("Query Execution Plan Tree from Postgres:")
-    for i in qep_list1:
-        print(i[0])
-    print()
-    
-    # Print Explanation
-    count = 1
-    print("Description: ")
-    for i in node_list:
-        print(str(count) + ". " + get_exp(i))
-        print()
-        count = count + 1
 
 
 def compare_graph_labels(graph1_str, graph2_str):
+    """
+        Parameters:
+            graph1_str (str): Dot string of graph 1
+            graph2_str (str): Dot string of graph 2
+        Returns:
+            missing_in_graph1 (set): set of node types missing in graph 1
+            missing_in_graph2 (set): set of node types missing in graph 2
+    """
     # Parse the Graphviz graphs from the input strings
     graph1 = pydot.graph_from_dot_data(graph1_str)[0]
     graph2 = pydot.graph_from_dot_data(graph2_str)[0]
@@ -228,24 +188,30 @@ def compare_graph_labels(graph1_str, graph2_str):
     return missing_in_graph1, missing_in_graph2
 
 def highlight_node(dot_string,element):
-    # Find the node with label "Gather"
+    """
+        Parameters:
+            dot_string (str): Dot string of graph to be highlighted
+            element (str): Element to be highlighted in graph
+        Returns:
+            dot_string of graph with highlights
+    """
+    node_id_arr = []
     node_id = None
     lines = dot_string.split('\n')
     for line in lines:
         if 'label='+str(element) in line:
             node_id = line.split(' ')[0]
-            break
+            node_id_arr.append(node_id)
     
     # If the node is found, add a red fill color to it
     if node_id is not None:
         for i in range(len(lines)):
-            if node_id in lines[i]:
-                lines[i] = lines[i].replace(']', ' style=filled fillcolor=red];')
-                break
+            for node_id in node_id_arr:
+                if node_id in lines[i]:
+                    lines[i] = lines[i].replace(']', ' style=filled fillcolor=red];')
+                    
     
     # Return the modified dot string
     return '\n'.join(lines)
 
-if __name__ == "__main__":
-    main()
 
