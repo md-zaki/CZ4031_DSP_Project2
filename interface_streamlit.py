@@ -81,6 +81,7 @@ with col1:
         cursor.execute(extract_qp + query1)
         qep_list1 = cursor.fetchall()
         
+        node_list1 = add_relation_details(node_list1)
         # Print Explanation
         count = 1
         with st.expander("Description of Original Query:"):
@@ -139,6 +140,7 @@ with col2:
         cursor.execute(extract_qp + query2)
         qep_list2 = cursor.fetchall()
 
+        node_list2 = add_relation_details(node_list2)
         # Print Explanation
         count = 1
         with st.expander("Description of Evolved Query:"):
@@ -191,6 +193,8 @@ with st.expander("How the Query Execution Plans have evolved:"):
         diff_str = qep_diff_exp(missing1, missing2)
         st.write(diff_str)
         st.write(changes_query)
+        st.write("------------------------------------------------------Step by step differences------------------------------------------------------")
+        write_differences(st, node_list1, node_list2)
     except:
         pass
 

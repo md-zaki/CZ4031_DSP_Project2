@@ -40,31 +40,34 @@ def get_exp(node):
             return exp
         
         case "Hash Join":
-            exp = "The result from previously executed operations was joined using Hash Join"
+            #exp = "The result from previously executed operations was joined using Hash Join"
+            exp = "The result from steps ("+ str(node['Plans'][0]['step']) +") and ("+ str(node['Plans'][1]['step']) +") was joined using Hash Join"
             if "Hash Cond" in node:
                 exp = exp + " with condition " + node["Hash Cond"]
             return exp
         
         case "Merge Join":
-            exp = "Merge Join is executed on results of sub operations"
+            #exp = "Merge Join is executed on results of sub operations"
+            exp = "Merge Join is executed on results of steps ("+ str(node['Plans'][0]['step']) +") and ("+ str(node['Plans'][1]['step']) +")"
             if "Merge Cond" in node:
                 exp = exp + " with condition " + node["Merge Cond"]
             return exp
         
         case "Nested Loop":
-            exp = "Nested loop was executed to join results of sub operations"
+            exp = "Nested loop was executed to join results of steps ("+ str(node['Plans'][0]['step']) +") and ("+ str(node['Plans'][1]['step']) +")"
             return exp
         
         case "Sort":
-            exp = "The result is sorted using the key " + str(node['Sort Key'])
-            if "DESC" in node['Sort Key']:
+            #exp = "The result is sorted using the key " + str(node['Sort Key'])
+            exp = "The result from step ("+ str(node['Plans'][0]['step']) +") is sorted using the key " + str(node['Sort Key'])
+            if "DESC" in node['Sort Key'][0]:
                 exp = exp + " in descending order"
-            if "INC" in node['Sort Key']:
+            if "INC" in node['Sort Key'][0]:
                 exp = exp + " in ascending order"
             return exp
 
         case "Group":
-            exp = "The result of a previous operation in Grouped by the following key/keys:"
+            exp = "The result from step ("+ str(node['Plans'][0]['step']) +") is Grouped by the following key/keys:"
             for i, key in enumerate(node["Group Key"]):
                 exp = exp + key + " "
                 if i == len(node["Group Key"]) - 1:
@@ -79,17 +82,17 @@ def get_exp(node):
 
         case "Aggregate":
             if node['Strategy'] == "Hashed":
-                exp = "Aggregation was executed by Hashing on all rows of relation based on the following keys: "
+                exp = "Aggregation was executed by Hashing on all rows of relation from step ("+ str(node['Plans'][0]['step']) +") based on the following keys: "
                 for i in node['Group Key']:
                     exp = exp + str(i) + ','
                 exp = exp + ". The results are aggregated into buckets according to the hashed key."
                 return exp
             elif node['Strategy'] == "Plain":
-                exp = "Normal Aggregation was executed on the result"
+                exp = "Normal Aggregation was executed on the result from step ("+ str(node['Plans'][0]['step']) +")"
                 return exp
             elif node['Strategy'] == 'Sorted':
-                exp = "Aggregation was executed by sorting all rows of relation based on keys. "
-                if "Group Key" in node['Strategy']:
+                exp = "Aggregation was executed by sorting all rows of relation from step ("+ str(node['Plans'][0]['step']) +") based on keys. "
+                if "Group Key" in node:#['Strategy']:
                     exp = exp + "The aggregated keys are: "
                     for i in node['Group Key']:
                         exp = exp + str(i) + ','
@@ -144,14 +147,15 @@ def get_exp(node):
             return exp
         
         case "Hash":
-            exp = "Hash function was executed to make memory hash using table rows"
+            exp = "Hash function was executed on results from step (" + str(node['Plans'][0]['step']) +") to make memory hash using table rows"
             return exp
         case "Memoize":
             exp = "Previous result of sub operations was cached using cache key of " + node['Cache Key'] + " using the Memoized Operation"
             return exp
             
         case "Gather Merge":
-            exp = "Gather Merge operation was executed on the results from parallel sub operations. Order of the results is preserved."
+            #exp = "Gather Merge operation was executed on the results from parallel sub operations. Order of the results is preserved."
+            exp = "Gather Merge operation was executed on the results from step ("+ str(node['Plans'][0]['step']) +"). Order of the results is preserved."
             return exp
             
         case "Gather":
@@ -312,8 +316,164 @@ def qep_diff_exp(missing1, missing2):
     
     return exp_str1
 
+def add_relation_details(node_list):
+    scans = ["Seq Scan", "Index Scan"]
+    joins = ["Hash Join", "Nested Loop", "Merge Join"]
+    step = 1
+    for node in node_list:
+        if(node['Node Type'] in scans):
+            node['Relations'] = [node['Relation Name']]
+            node['step'] = step
+            step += 1
+        if(node['Node Type'] not in scans and node['Node Type'] not in joins):
+            node['Relations'] = node['Plans'][0]['Relations']
+            node['step'] = step
+            step += 1
+        if(node['Node Type'] in joins):
+            temp_relation = node['Plans'][0]['Relations']
+            temp_relation1 = node['Plans'][1]['Relations']
+            node['Relations'] = temp_relation+temp_relation1
+            node['step'] = step
+            step += 1
+    return node_list
 
+def identify_same_nodes(i, j):
+    scans = ["Seq Scan", "Index Scan"]
+    joins = ["Hash Join", "Nested Loop", "Merge Join"]
+    if(j["Node Type"]==i["Node Type"]):
 
+        if j["Node Type"] in joins:
+            match j["Node Type"]:
+                case "Hash Join":
+                    if i["Hash Cond"] == j["Hash Cond"]:
+                        return True
+                case "Merge Join":
+                    if i["Merge Cond"] == j["Merge Cond"]:
+                        return True
+                
+        if j["Node Type"] in scans:
+            match j["Node Type"]:
+                case "Seq Scan":
+                    j_filter = None
+                    i_filter = None
+                    if 'Filter' in j: j_filter = j['Filter']
+                    if 'Filter' in i: i_filter = i['Filter']
+                    if i["Relation Name"] == j["Relation Name"] and j_filter==i_filter:
+                        return True
+                case "Index Scan":
+                    j_filter = None
+                    i_filter = None
+                    if 'Filter' in j: j_filter = j['Filter']
+                    if 'Filter' in i: i_filter = i['Filter']
+                    if i["Index Name"] == j["Index Name"] and i["Index Cond"] == j["Index Cond"] and j_filter==i_filter:
+                        return True
+                    
+        match j["Node Type"]:
+            case "Hash":
+                child = i["Plans"][0]
+                child1 = j["Plans"][0]
+                #if(child["Relation Name"] == child1["Relation Name"]):
+                if i['Relations'] == j['Relations']:
+                    return True
+            case "Sort":
+                if i['Relations'] == j['Relations'] and i['Sort Key'] == j['Sort Key']:
+                    return True
+            case "Group":
+                if i['Relations'] == j['Relations'] and i["Group Key"] == j["Group Key"]:
+                    return True
+            case "Aggregate":
+                if i['Relations'] == j['Relations'] and i['Strategy'] == j['Strategy']:
+                    if i['Strategy'] == 'Hashed' or i['Strategy'] == 'Sorted':
+                        if i['Group Key'] == j['Group Key']:
+                            return True
+                    elif i['Strategy'] == 'Plain':
+                        return True
+    
+    return False
 
+def write_differences(st, node_list1, node_list2):
+    scans = ["Seq Scan", "Index Scan"]
+    joins = ["Hash Join", "Nested Loop", "Merge Join"]
 
+    #node_list1 = add_relation_details(node_list1)
+    #node_list2 = add_relation_details(node_list2)
+                    
+    new_steps = []
 
+    print('-----------------------------------------------------------------------------------------------')
+ 
+    found = False
+    for i in node_list2:    #loop through evolved query
+        found = False
+        
+        for j in node_list1:    #loop through original query to compare nodes and append changed/new nodes to new_steps list
+            found = identify_same_nodes(i, j)
+            
+            if found == True:
+                break
+            
+        if(not found):
+            found = False
+            new_steps.append(i)
+
+    # for n in new_steps:
+    #     print(n)
+
+    for h in node_list2:
+        print(h,"\n")
+
+    found = False
+    for n in new_steps:
+        found = False
+        for m in node_list1:
+            n_filter = "Nothing"
+            m_filter = "Nothing"
+            if n['Node Type'] in scans and m['Node Type'] in scans and n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
+                found = True
+                if 'Filter' in n: n_filter = n['Filter']
+                if 'Filter' in m: m_filter = m['Filter']
+                if n['Node Type'] == m['Node Type']: #if they are the same type of scans e.g seq scan
+                    st.write("In second query (Step",n['step'] ,"), relation ", n['Relation Name'], "is filtered by ", n_filter, "instead of being filterd by", m_filter, " in the first query.")
+                    break
+                else:
+                    st.write("In second query (Step",n['step'] ,"), relation ", n['Relation Name'], "is scanned using", n['Node Type'], "instead of ", m['Node Type'], "and filtered by ", n_filter, ".")
+                    break
+
+            n_join = None
+            m_join = None
+            if 'Merg Cond' in n: n_join = n["Merg Cond"]
+            if 'Hash Cond' in n: n_join = n["Hash Cond"]
+            if 'Merg Cond' in m: m_join = m["Merg Cond"]
+            if 'Hash Cond' in m: m_join = m["Hash Cond"]
+            #if n['Node Type'] in joins and m['Node Type'] in joins and n_join == m_join and n['Relations'] == m['Relations']:
+            if n['Node Type'] in joins and m['Node Type'] in joins: #and n['Relations'] == m['Relations']:    #Finding differences for join types
+                if n['Node Type'] == 'Nested Loop' or m['Node Type'] == 'Nested Loop':
+                    if n['Relations'] == m['Relations']:
+                        found = True
+                        join_cond = n_join if n_join is not None else m_join
+                        st.write("In second query (Step",n['step'] ,"), the condition ", join_cond , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], " in the first query.")
+                        break
+                else:
+                    if n_join == m_join:
+                        found = True
+                        st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], " in the first query.")
+                        break
+                        
+            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and n['Relation Name'] == m['Relation Name']:    #Finding differences for aggregate
+                found = True
+                if n['Strategy'] == 'Hashed' or n['Strategy'] == 'Sorted':
+                    st.write("In second query (Step",n['step'] ,"), the aggregation was executed by", n['Strategy'], "using keys :", n['Group Key'], "instead of executing by ", m['Strategy'], "using keys :", m['Group Key'], "in the first query.")
+                else:
+                    st.write("In second query (Step",n['step'] ,"), the aggregation was executed by", n['Strategy'], "instead of executing by", m['Strategy'], "in the first query.")
+                break
+
+            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and n['Relation Name'] == m['Relation Name']:    #Find differences for grouping
+                found = True
+                st.write("In second query (Step",n['step'] ,"), the grouping is performed using keys:", n['Group Key'], "instead of ", m['Group Key'], "like in the first query.")
+
+            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and n['Relation Name'] == m['Relation Name']:
+                found = True
+                st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
+
+        if found == False:
+            st.write("New step in second query (Step",n['step'] ,"): ", get_exp(n))
