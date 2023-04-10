@@ -27,7 +27,7 @@ col1, col2 = st.columns(2, gap="small")
 with col1:
     query1 = ""
     # User input query string
-    query1 = st.text_input('Enter query 1')
+    query1 = st.text_input('Enter Original Query')
     if query1 != "":
         cursor.execute(extract_qp + query1)
         # get query plan in JSON format
@@ -76,7 +76,7 @@ with col1:
         
         # Print Explanation
         count = 1
-        with st.expander("Description of Query 1:"):
+        with st.expander("Description of Original Query:"):
             # st.subheader("Description: ")
             for i in node_list:
                 st.write(str(count) + ". " + get_exp(i))
@@ -87,7 +87,7 @@ extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) " # update ext
 with col2:
     query2 = ""
     # User input query string
-    query2 = st.text_input('Enter query 2')
+    query2 = st.text_input('Enter Evolved Query')
     if query2 != "":
         cursor.execute(extract_qp + query2)
         # get query plan in JSON format
@@ -134,7 +134,7 @@ with col2:
 
         # Print Explanation
         count = 1
-        with st.expander("Description of Query 2:"):
+        with st.expander("Description of Evolved Query:"):
             for i in node_list:
                 st.write(str(count) + ". " + get_exp(i))
                 count = count + 1
@@ -148,6 +148,7 @@ try:
 
     for i in missing2:
         graph_str1 = highlight_node(graph_str1,i) # highlight differences in red
+    changes_query = query_diff(query1, query2)
 except:
     st.error("Please key in Both Queries")
 # =========================================================================================
@@ -156,7 +157,7 @@ except:
 # =========================== Display Graph =====================================
 with col1:
     try:
-        with st.expander("QEP Tree of Query 1"):
+        with st.expander("QEP Tree of Original Query"):
                 # st.subheader("Query Execution Plan Tree from Postgres")
                 print("Q1")
                 print(graph_str1)
@@ -167,7 +168,7 @@ with col1:
         st.error("Please key in Original Query")
 with col2:
     try:
-        with st.expander("QEP Tree of Query 2"):
+        with st.expander("QEP Tree of Evolved Query"):
                 # st.subheader("Query Execution Plan Tree from Postgres")
                 print("Q2")
                 print(graph_str2)
@@ -178,5 +179,9 @@ with col2:
 # =============================================================================
 
 st.header("Differences")
-st.write("Difference description is here")
+try:
+    st.write(changes_query)
+except:
+    pass
+
 

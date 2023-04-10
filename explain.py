@@ -2,6 +2,7 @@
 from collections import deque
 import psycopg2
 import pydot
+import re
 
 def get_exp(node):
     """
@@ -213,5 +214,76 @@ def highlight_node(dot_string,element):
     
     # Return the modified dot string
     return '\n'.join(lines)
+
+def query_diff(q1, q2):
+    """
+        Parameters:
+            q1 (str): string of first sql query
+            q2 (str): string of second sql query
+        Returns:
+            comp_str (str): string of explanation of changes in the sql query
+    """
+    select_clause1 = ''
+    from_clause1 = ''
+    where_clause1 = ''
+    select_clause2 = ''
+    from_clause2 = ''
+    where_clause2 = ''
+    if(q1 == q2):
+        return "There are no changes between the queries"
+    comp_str = 'due to changes in the '
+
+    try:
+        select_clause1 = re.search(r"(?i)^SELECT\s+(.+?)\s+FROM", q1).group(1)
+    except:
+        try:
+            select_clause1 = re.search(r"(?i)^SELECT\s+(.+?)$", q1).group(1)
+        except:
+            pass
+
+    try:
+        from_clause1 = re.search(r"(?i)^SELECT.+?\s+FROM\s+(.+?)\s+WHERE", q1).group(1)
+    except:
+        try:
+            from_clause1 = re.search(r"(?i)^SELECT.+?\s+FROM\s+(.+?)$", q1).group(1)
+        except:
+            pass
+
+    try:
+        where_clause1 = re.search(r"(?i)^SELECT.+?\s+FROM.+?\s+WHERE\s+(.+?)$", q1).group(1)
+    except:
+        pass
+
+    try:
+        select_clause2 = re.search(r"(?i)^SELECT\s+(.+?)\s+FROM", q2).group(1)
+    except:
+        try:
+            select_clause2 = re.search(r"(?i)^SELECT\s+(.+?)$", q2).group(1)
+        except:
+            pass
+
+    try:
+        from_clause2 = re.search(r"(?i)^SELECT.+?\s+FROM\s+(.+?)\s+WHERE", q2).group(1)
+    except:
+        try:
+            from_clause2 = re.search(r"(?i)^SELECT.+?\s+FROM\s+(.+?)$", q2).group(1)
+        except:
+            pass
+
+    try:
+        where_clause2 = re.search(r"(?i)^SELECT.+?\s+FROM.+?\s+WHERE\s+(.+?)$", q2).group(1)
+    except:
+        pass
+
+    if str(select_clause1) != str(select_clause2):
+        comp_str = comp_str + 'SELECT clause, '
+    if str(from_clause1) != str(from_clause2):
+        comp_str = comp_str + 'FROM clause, '
+    if str(where_clause1) != str(where_clause2):
+        comp_str = comp_str + 'WHERE clause, '
+    comp_str = comp_str + 'of the Evolved Query'
+
+    return comp_str
+
 
 
