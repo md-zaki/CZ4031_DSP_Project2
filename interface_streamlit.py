@@ -21,6 +21,26 @@ conn = psycopg2.connect(database=args.db,
                             password=args.pwd,
                             port="5432")
 cursor = conn.cursor()
+
+
+# ==================== Display table names and column names at the left side ====================
+with st.sidebar:
+    st.header("Database schema")
+    st.write(f"**(current DB: {conn.info.dbname})**")
+    # Get table names from current database
+    cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
+    table_names = sorted([row[0] for row in cursor])
+    for table_name in table_names:
+        with st.expander(f"**{table_name}**"):
+            # Get column names and data types from current table
+            cursor.execute(f"SELECT column_name, data_type, ordinal_position FROM information_schema.columns \
+                           WHERE table_name='{table_name}' ORDER BY ordinal_position")
+            column_tuples = [row for row in cursor]  # each "row" will be a (col_name, col_type, col_position) tuple
+            for tuple in column_tuples:
+                st.write(f"&nbsp;&nbsp;&nbsp;&nbsp;{tuple[0]} ({tuple[1]})")  # "&nbsp;" is space in markdown
+# ===============================================================================================
+
+
 # declare postgres extract qp string
 extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) "
 
