@@ -59,6 +59,7 @@ with col1:
         query1 = st.text_area('Enter Original Query:')
         if query1 != "":
             query1 = " ".join(query1.splitlines())  # ensures multi-line text is properly joined
+            query1 = " ".join(query1.split())  # replace multiple spaces to single space
             cursor.execute(extract_qp + query1)
             # get query plan in JSON format
             qep1 = cursor.fetchall()[0][0][0].get("Plan")
@@ -94,6 +95,7 @@ with col2:
         query2 = st.text_area('Enter Evolved Query:')
         if query2 != "":
             query2 = " ".join(query2.splitlines())  # ensures multi-line text is properly joined
+            query2 = " ".join(query2.split())  # replace multiple spaces to single space
             cursor.execute(extract_qp + query2)
             # get query plan in JSON format
             qep2 = cursor.fetchall()[0][0][0].get("Plan")
