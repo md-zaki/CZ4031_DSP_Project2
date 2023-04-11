@@ -473,5 +473,7 @@ def write_differences(st, node_list1, node_list2):
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
 
+            if n['Node Type'] == 'Gather' and m['Node Type'] == 'Gather': # added by zaki 
+                found = True
         if found == False:
             st.write("New step in second query (Step",n['step'] ,"): ", get_exp(n))
