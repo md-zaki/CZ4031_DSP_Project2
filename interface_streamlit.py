@@ -214,7 +214,7 @@ with st.expander("How the Query Execution Plans have evolved:"):
             diff_str = qep_diff_exp(missing1, missing2)
             st.write(diff_str)
         except:
-            st.error('Both queries share the same operation types')
+            st.success('Both queries share the same operation types')
         st.write(changes_query)
         st.write("------------------------------------------------------Step by step differences------------------------------------------------------")
         write_differences(st, node_list1, node_list2)
