@@ -161,11 +161,10 @@ with col2:
 
 
 with st.expander("How the Query Execution Plans have evolved:"):
-    
+        st.write(changes_query)
         try:
             diff_str = qep_diff_exp(missing1, missing2)
             st.subheader('Overall differences')
-            st.write(changes_query)
             st.write(diff_str)
             
         except:
