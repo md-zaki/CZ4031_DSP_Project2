@@ -54,63 +54,69 @@ col1, col2 = st.columns(2, gap="small")
 with col1:
     query1 = ""
     # User input query string
-    query1 = st.text_input('Enter Original Query')
-    if query1 != "":
-        cursor.execute(extract_qp + query1)
-        # get query plan in JSON format
-        qep1 = cursor.fetchall()[0][0][0].get("Plan")
+    try:
+        query1 = st.text_input('Enter Original Query')
+        if query1 != "":
+            cursor.execute(extract_qp + query1)
+            # get query plan in JSON format
+            qep1 = cursor.fetchall()[0][0][0].get("Plan")
 
-        #process nodes to get node_list of all operations and to get dot string of created graph
-        graph_str1, node_list1 = process_nodes(qep1)
-        
-        # Reverse the list
-        node_list1.reverse()
+            #process nodes to get node_list of all operations and to get dot string of created graph
+            graph_str1, node_list1 = process_nodes(qep1)
+            
+            # Reverse the list
+            node_list1.reverse()
 
-        extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
-        cursor.execute(extract_qp + query1)
-        qep_list1 = cursor.fetchall()
-        
-        node_list1 = add_relation_details(node_list1)
-        # Print Explanation
-        count = 1
-        with st.expander("Description of Original Query:"):
-            # st.subheader("Description: ")
-            for i in node_list1:
-                st.write(str(count) + ". " + get_exp(i))
-                count = count + 1
+            extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
+            cursor.execute(extract_qp + query1)
+            qep_list1 = cursor.fetchall()
+            
+            node_list1 = add_relation_details(node_list1)
+            # Print Explanation
+            count = 1
+            with st.expander("Description of Original Query:"):
+                # st.subheader("Description: ")
+                for i in node_list1:
+                    st.write(str(count) + ". " + get_exp(i))
+                    count = count + 1
+    except:
+        st.error('INVALID QUERY')
         
         
 extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) " # update extract qp string
 with col2:
     query2 = ""
     # User input query string
-    query2 = st.text_input('Enter Evolved Query')
-    if query2 != "":
-        cursor.execute(extract_qp + query2)
-        # get query plan in JSON format
-        qep2 = cursor.fetchall()[0][0][0].get("Plan")
+    try:
+        query2 = st.text_input('Enter Evolved Query')
+        if query2 != "":
+            cursor.execute(extract_qp + query2)
+            # get query plan in JSON format
+            qep2 = cursor.fetchall()[0][0][0].get("Plan")
 
-        node_list2 = [] # make lists of nodes and its sub plans
-        graph_str2 = ''''''
-        graph_str2 = graph_str2 + 'digraph {'
+            node_list2 = [] # make lists of nodes and its sub plans
+            graph_str2 = ''''''
+            graph_str2 = graph_str2 + 'digraph {'
 
-        #process nodes to get node_list of all operations and to get dot string of created graph
-        graph_str2,node_list2 = process_nodes(qep2)
-       
-        # Reverse the list
-        node_list2.reverse()
+            #process nodes to get node_list of all operations and to get dot string of created graph
+            graph_str2,node_list2 = process_nodes(qep2)
+        
+            # Reverse the list
+            node_list2.reverse()
 
-        extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
-        cursor.execute(extract_qp + query2)
-        qep_list2 = cursor.fetchall()
+            extract_qp = "EXPLAIN (COSTS FALSE, TIMING FALSE) " # update extract qp string
+            cursor.execute(extract_qp + query2)
+            qep_list2 = cursor.fetchall()
 
-        node_list2 = add_relation_details(node_list2)
-        # Print Explanation
-        count = 1
-        with st.expander("Description of Evolved Query:"):
-            for i in node_list2:
-                st.write(str(count) + ". " + get_exp(i))
-                count = count + 1
+            node_list2 = add_relation_details(node_list2)
+            # Print Explanation
+            count = 1
+            with st.expander("Description of Evolved Query:"):
+                for i in node_list2:
+                    st.write(str(count) + ". " + get_exp(i))
+                    count = count + 1
+    except:
+        st.error("INVALID QUERY")
 
 # ================== Get differences in labels between the 2 graphs ======================
 try:
@@ -138,7 +144,8 @@ with col1:
                 # #     st.write(i[0])
                 st.graphviz_chart(graph_str1)
     except:
-        st.error("Please key in Original Query")
+        pass
+        # st.error("Please key in Original Query")
 with col2:
     try:
         with st.expander("QEP Tree of Evolved Query"):
@@ -147,7 +154,8 @@ with col2:
                 # print(graph_str2)
                 st.graphviz_chart(graph_str2)
     except:
-        st.error("Please key in Evolved Query")
+        pass
+        # st.error("Please key in Evolved Query")
 
 # =============================================================================
 
@@ -156,12 +164,18 @@ with st.expander("How the Query Execution Plans have evolved:"):
     
         try:
             diff_str = qep_diff_exp(missing1, missing2)
+            st.subheader('Overall differences')
+            st.write(changes_query)
             st.write(diff_str)
+            
         except:
             st.success('Both queries share the same operation types')
-        st.write(changes_query)
-        st.write("------------------------------------------------------Step by step differences------------------------------------------------------")
-        write_differences(st, node_list1, node_list2)
+        
+        try:
+            st.subheader("Step by step differences")
+            write_differences(st, node_list1, node_list2)
+        except:
+            st.error("No Differences")
     
 
 
