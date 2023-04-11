@@ -157,7 +157,7 @@ def get_exp(node):
             return exp
             
         case "Gather":
-            exp = "Gather operation was executed on the results from parallel sub operations. Order of the results is not preserved."
+            exp = "Gather operation was executed on the results from step ("+ str(node['Plans'][0]['step']) +"). Order of the results is not preserved."
             return exp
         case _:
             return node['Node Type']
@@ -386,7 +386,28 @@ def identify_same_nodes(i, j):
                             return True
                     elif i['Strategy'] == 'Plain':
                         return True
-    
+            case "Gather":
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "Gather Merge":
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "Memoize":
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "WindowAgg":    
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "Materialize":
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "Unique":   
+                if i['Relations'] == j['Relations']: 
+                    return True
+            case "Append":
+                if i['Relations'] == j['Relations']:
+                    return True
+        
     return False
 
 def write_differences(st, node_list1, node_list2):
@@ -417,8 +438,8 @@ def write_differences(st, node_list1, node_list2):
     # for n in new_steps:
     #     print(n)
 
-    for h in node_list2:
-        print(h,"\n")
+    # for h in node_list2:
+    #     print(h,"\n")
 
     found = False
     for n in new_steps:
@@ -449,50 +470,32 @@ def write_differences(st, node_list1, node_list2):
                     if n['Relations'] == m['Relations']:
                         found = True
                         join_cond = n_join if n_join is not None else m_join
-                        st.write("In second query (Step",n['step'] ,"), the condition ", join_cond , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], " in the first query.")
+                        st.write("In second query (Step",n['step'] ,"), the condition ", join_cond , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], "like in the first query.")
                         break
                 else:
                     if n_join == m_join:
                         found = True
-                        st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], " in the first query.")
+                        st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], "like in the first query.")
                         break
                         
-            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and m['Relation Name'] == n['Relation Name']:    #Finding differences for aggregate
+            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and m['Relations'] == n['Relations']:    #Finding differences for aggregate
                 found = True
                 if n['Strategy'] == 'Hashed' or n['Strategy'] == 'Sorted':
-                    st.write("In second query (Step",n['step'] ,"), the aggregation was executed by", n['Strategy'], "using keys :", n['Group Key'], "instead of executing by ", m['Strategy'], "using keys :", m['Group Key'], "in the first query.")
+                    m_group_key = [None]
+                    if 'Group Key' in m: m_group_key = m['Group Key']
+                    st.write("In second query (Step",n['step'] ,"),", n['Strategy'], "aggregation was executed using keys :", str(n['Group Key']), "instead of executing by ", m['Strategy'], " aggregation using keys :", str(m_group_key), "like in the first query.")
                 else:
-                    st.write("In second query (Step",n['step'] ,"), the aggregation was executed by", n['Strategy'], "instead of executing by", m['Strategy'], "in the first query.")
+                    st.write("In second query (Step",n['step'] ,"),", n['Strategy'], "aggregation was executed instead of executing by", m['Strategy'], "aggregation like in the first query.")
                 break
 
-            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and n['Relation Name'] == m['Relation Name']:    #Find differences for grouping
+            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and n['Relations'] == m['Relations']:    #Find differences for grouping
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the grouping is performed using keys:", n['Group Key'], "instead of ", m['Group Key'], "like in the first query.")
 
-            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and n['Relation Name'] == m['Relation Name']:
+            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and n['Relations'] == m['Relations']:
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
 
-            if n['Node Type'] == 'Gather' and m['Node Type'] == 'Gather': # added by zaki
-                found = True
-
-            if n['Node Type'] == 'Gather Merge' and m['Node Type'] == 'Gather Merge': # added by zaki
-                found = True
-
-            if n['Node Type'] == 'Memoize' and m['Node Type'] == 'Memoize': # added by zaki
-                found = True
-            
-            if n['Node Type'] == 'WindowAgg' and m['Node Type'] == 'WindowAgg': # added by zaki
-                found = True
-
-            if n['Node Type'] == 'Materialize' and m['Node Type'] == 'Materialize': # added by zaki
-                found = True
-            
-            if n['Node Type'] == 'Unique' and m['Node Type'] == 'Unique': # added by zaki
-                found = True
-
-            if n['Node Type'] == 'Append' and m['Node Type'] == 'Append': # added by zaki
-                found = True
         if found == False:
             st.write("New step in second query (Step",n['step'] ,"): ", get_exp(n))
 
