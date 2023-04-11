@@ -49,8 +49,7 @@ def clean_query(raw_text):
         Returns:
             cleaned_text (str): cleaned input query
     """
-    cleaned_text = " ".join(raw_text.splitlines())  # ensures multi-line text is properly joined
-    cleaned_text = cleaned_text.strip()  # remove leading and trailing whitespace
+    cleaned_text = raw_text.strip()  # remove leading and trailing whitespace
     cleaned_text = " ".join(cleaned_text.split())  # replace multiple spaces to single space
 
     # Replace illegal quote characters
@@ -74,8 +73,7 @@ with col1:
     query1 = ""
     # User input query string
     try:
-        # query1 = st.text_input('Enter Original Query')
-        query1 = st.text_area('Enter Original Query:')
+        query1 = st.text_input('Enter Original Query:')
         if query1 != "":
             query1 = clean_query(query1)
             cursor.execute(extract_qp + query1)
@@ -109,8 +107,7 @@ with col2:
     query2 = ""
     # User input query string
     try:
-        # query2 = st.text_input('Enter Evolved Query')
-        query2 = st.text_area('Enter Evolved Query:')
+        query2 = st.text_input('Enter Evolved Query:')
         if query2 != "":
             query2 = clean_query(query2)
             cursor.execute(extract_qp + query2)
