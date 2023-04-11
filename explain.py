@@ -233,7 +233,7 @@ def query_diff(q1, q2):
     where_clause2 = ''
     if(q1 == q2):
         return "There are no changes between the queries"
-    comp_str = 'due to changes in the '
+    comp_str = 'Due to changes in the '
 
     try:
         select_clause1 = re.search(r"(?i)^SELECT\s+(.+?)\s+FROM", q1).group(1)
@@ -283,7 +283,7 @@ def query_diff(q1, q2):
         comp_str = comp_str + 'FROM clause, '
     if str(where_clause1) != str(where_clause2):
         comp_str = comp_str + 'WHERE clause, '
-    comp_str = comp_str + 'of the Evolved Query.'
+    comp_str = comp_str + 'of the Evolved Query, '
 
     return comp_str
 
@@ -297,7 +297,7 @@ def qep_diff_exp(missing1, missing2):
             exp_str1 (str): string of explanation of changes of operations between the 2 QEPs
     """
     if(missing2):
-        exp_str1 = 'The following operations from the original query plan: '
+        exp_str1 = 'the following operations from the original query plan: '
         for i in missing2:
             exp_str1 = exp_str1 + str(i) + ', '
         exp_str1 = exp_str1 + 'were replaced by '
@@ -307,7 +307,7 @@ def qep_diff_exp(missing1, missing2):
                 exp_str1 = exp_str1 + str(i) + ', '
             exp_str1 = exp_str1 + ' in the evolved query plan'
     elif(missing1):
-        exp_str1 = 'The following operations were added to the evolved query plan: '
+        exp_str1 = 'the following operations were added to the evolved query plan: '
         for i in missing1:
             exp_str1 = exp_str1 + str(i) + ', '
 
