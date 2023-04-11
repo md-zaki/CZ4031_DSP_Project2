@@ -68,12 +68,10 @@ def get_exp(node):
 
         case "Group":
             exp = "The result from step ("+ str(node['Plans'][0]['step']) +") is Grouped by the following key/keys:"
-            for i, key in enumerate(node["Group Key"]):
-                exp = exp + key + " "
-                if i == len(node["Group Key"]) - 1:
-                    exp = exp + "."
-                else:
-                    exp = exp + ", "
+            key = node["Group Key"]
+            exp = exp + str(key) + " "
+                
+                    
             return exp     
 
         case "Limit":
@@ -459,7 +457,7 @@ def write_differences(st, node_list1, node_list2):
                         st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], " in the first query.")
                         break
                         
-            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and n['Relation Name'] == m['Relation Name']:    #Finding differences for aggregate
+            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and m['Relation Name'] == n['Relation Name']:    #Finding differences for aggregate
                 found = True
                 if n['Strategy'] == 'Hashed' or n['Strategy'] == 'Sorted':
                     st.write("In second query (Step",n['step'] ,"), the aggregation was executed by", n['Strategy'], "using keys :", n['Group Key'], "instead of executing by ", m['Strategy'], "using keys :", m['Group Key'], "in the first query.")

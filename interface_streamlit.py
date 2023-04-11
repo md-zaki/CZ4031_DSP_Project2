@@ -209,13 +209,12 @@ with col2:
 
 
 with st.expander("How the Query Execution Plans have evolved:"):
-    try:
+    
         diff_str = qep_diff_exp(missing1, missing2)
         st.write(diff_str)
         st.write(changes_query)
         st.write("------------------------------------------------------Step by step differences------------------------------------------------------")
         write_differences(st, node_list1, node_list2)
-    except:
-        pass
+    
 
 
