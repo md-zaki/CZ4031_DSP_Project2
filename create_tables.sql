@@ -140,7 +140,7 @@ CREATE TABLE public.orders
 	o_orderdate date NOT NULL,
 	o_orderpriority character(15) COLLATE pg_catalog."default" NOT NULL,
 	o_clerk character(15) COLLATE pg_catalog."default" NOT NULL,
-	oshippriority integer NOT NULL,
+	o_shippriority integer NOT NULL,
 	o_comment character varying(79) COLLATE pg_catalog."default" NOT NULL,
 	CONSTRAINT orders_pkey PRIMARY KEY (o_orderkey),
 	CONSTRAINT fk_orders FOREIGN KEY (o_custkey)
