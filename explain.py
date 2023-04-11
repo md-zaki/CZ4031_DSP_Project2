@@ -206,7 +206,7 @@ def highlight_node(dot_string,element):
             node_id = line.split(' ')[0]
             node_id_arr.append(node_id)
     
-    # If the node is found, add a red fill color to it
+    # If the node is found, add a yellow fill color to it
     if node_id is not None:
         for i in range(len(lines)):
             for node_id in node_id_arr:
