@@ -55,8 +55,10 @@ with col1:
     query1 = ""
     # User input query string
     try:
-        query1 = st.text_input('Enter Original Query')
+        # query1 = st.text_input('Enter Original Query')
+        query1 = st.text_area('Enter Original Query:')
         if query1 != "":
+            query1 = " ".join(query1.splitlines())  # ensures multi-line text is properly joined
             cursor.execute(extract_qp + query1)
             # get query plan in JSON format
             qep1 = cursor.fetchall()[0][0][0].get("Plan")
@@ -79,8 +81,8 @@ with col1:
                 for i in node_list1:
                     st.write(str(count) + ". " + get_exp(i))
                     count = count + 1
-    except:
-        st.error('INVALID QUERY')
+    except Exception as e:
+        st.error(e)
         
         
 extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) " # update extract qp string
@@ -88,8 +90,10 @@ with col2:
     query2 = ""
     # User input query string
     try:
-        query2 = st.text_input('Enter Evolved Query')
+        # query2 = st.text_input('Enter Evolved Query')
+        query2 = st.text_area('Enter Evolved Query:')
         if query2 != "":
+            query2 = " ".join(query2.splitlines())  # ensures multi-line text is properly joined
             cursor.execute(extract_qp + query2)
             # get query plan in JSON format
             qep2 = cursor.fetchall()[0][0][0].get("Plan")
@@ -115,8 +119,8 @@ with col2:
                 for i in node_list2:
                     st.write(str(count) + ". " + get_exp(i))
                     count = count + 1
-    except:
-        st.error("INVALID QUERY")
+    except Exception as e:
+        st.error(e)
 
 # ================== Get differences in labels between the 2 graphs ======================
 try:
@@ -129,7 +133,7 @@ try:
         graph_str1 = highlight_node(graph_str1,i) # highlight differences in red
     changes_query = query_diff(query1, query2)
 except:
-    st.error("Please key in Both Queries")
+    st.error("Please ensure you have entered **BOTH** queries and they are valid")
 # =========================================================================================
 
 
