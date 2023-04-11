@@ -3,6 +3,7 @@ import graphviz
 from collections import deque
 import psycopg2
 import argparse
+import re
 from explain import *
 
 parser = argparse.ArgumentParser()
@@ -41,6 +42,24 @@ with st.sidebar:
 # ===============================================================================================
 
 
+def clean_query(raw_text):
+    """
+        Parameters:
+            raw_text (str): raw input query from textbox
+        Returns:
+            cleaned_text (str): cleaned input query
+    """
+    cleaned_text = " ".join(raw_text.splitlines())  # ensures multi-line text is properly joined
+    cleaned_text = cleaned_text.strip()  # remove leading and trailing whitespace
+    cleaned_text = " ".join(cleaned_text.split())  # replace multiple spaces to single space
+
+    # Replace illegal quote characters
+    cleaned_text = re.sub(r"‘|’", "'", cleaned_text)
+    cleaned_text = re.sub(r"“|”", '"', cleaned_text)
+
+    return cleaned_text
+
+
 # declare postgres extract qp string
 extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) "
 
@@ -58,8 +77,7 @@ with col1:
         # query1 = st.text_input('Enter Original Query')
         query1 = st.text_area('Enter Original Query:')
         if query1 != "":
-            query1 = " ".join(query1.splitlines())  # ensures multi-line text is properly joined
-            query1 = " ".join(query1.split())  # replace multiple spaces to single space
+            query1 = clean_query(query1)
             cursor.execute(extract_qp + query1)
             # get query plan in JSON format
             qep1 = cursor.fetchall()[0][0][0].get("Plan")
@@ -82,8 +100,8 @@ with col1:
                 for i in node_list1:
                     st.write(str(count) + ". " + get_exp(i))
                     count = count + 1
-    except Exception as e:
-        st.error(e)
+    except:
+        st.error("INVALID QUERY")
         
         
 extract_qp = "EXPLAIN (ANALYZE false, SETTINGS true, FORMAT JSON) " # update extract qp string
@@ -94,8 +112,7 @@ with col2:
         # query2 = st.text_input('Enter Evolved Query')
         query2 = st.text_area('Enter Evolved Query:')
         if query2 != "":
-            query2 = " ".join(query2.splitlines())  # ensures multi-line text is properly joined
-            query2 = " ".join(query2.split())  # replace multiple spaces to single space
+            query2 = clean_query(query2)
             cursor.execute(extract_qp + query2)
             # get query plan in JSON format
             qep2 = cursor.fetchall()[0][0][0].get("Plan")
@@ -121,8 +138,8 @@ with col2:
                 for i in node_list2:
                     st.write(str(count) + ". " + get_exp(i))
                     count = count + 1
-    except Exception as e:
-        st.error(e)
+    except:
+        st.error("INVALID QUERY")
 
 # ================== Get differences in labels between the 2 graphs ======================
 try:
