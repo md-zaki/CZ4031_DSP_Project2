@@ -495,3 +495,47 @@ def write_differences(st, node_list1, node_list2):
                 found = True
         if found == False:
             st.write("New step in second query (Step",n['step'] ,"): ", get_exp(n))
+
+def process_nodes(qep):
+    """
+        Parameters:
+            qep: Representing a QEP of a query in JSON format
+        Returns:
+            graph_str (str): Dot string of created graph
+            node_list (list): list of operations in query plan
+    """
+    # make lists of nodes and its sub plans
+    node_list = []
+    # declare empty dot string of graph 1
+    graph_str = ''''''
+    graph_str = graph_str + 'digraph {\n'
+
+    # ========================== Create node lists with node types in QEP and create dot string for graph visualization ===============================
+    q = deque([qep]) # get first subplan
+    step = 1
+    parentnum = 1
+    root = 0
+    while q:
+        for i in range(len(q)): # iterate through all subplans
+            node = q.popleft() 
+            parent = str(node['Node Type']).replace(" ", "") # get node type of subplan
+            if root == 0:
+                graph_str = graph_str + str(step) + '[label="' + parent + '"]\n' # create dot string for graph visualization
+                root = 1
+                parentnum = step
+                step = step + 1 # update graph index
+            
+            node_list.append(node) # append node type of subplan to node_list
+
+            if "Plans" in node:
+                
+                for child in node['Plans']: # iterate through all childs of current node
+                    graph_str = graph_str + str(step) + '[label="' + str(child['Node Type']).replace(" ", "") + '"]\n' # create dot string for graph visualization
+                    graph_str = graph_str + str(parentnum) + '->' + str(step) + "\n" # create dot string for graph visualization
+                    step = step + 1 # update graph index
+                    q.append(child) # append child node to q
+            parentnum = parentnum + 1
+    graph_str = graph_str + '}' # close the dot string
+    # ====================================================================================================================================================
+
+    return graph_str, node_list

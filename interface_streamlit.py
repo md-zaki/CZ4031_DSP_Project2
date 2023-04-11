@@ -59,41 +59,10 @@ with col1:
         cursor.execute(extract_qp + query1)
         # get query plan in JSON format
         qep1 = cursor.fetchall()[0][0][0].get("Plan")
-        # make lists of nodes and its sub plans
-        node_list1 = []
 
-        # declare empty dot string of graph 1
-        graph_str1 = ''''''
-        graph_str1 = graph_str1 + 'digraph {\n'
-
-        # ========================== Create node lists with node types in QEP and create dot string for graph visualization ===============================
-        q = deque([qep1]) # get first subplan
-        step = 1
-        parentnum = 1
-        root = 0
-        while q:
-            for i in range(len(q)): # iterate through all subplans
-                node = q.popleft() 
-                parent = str(node['Node Type']).replace(" ", "") # get node type of subplan
-                if root == 0:
-                    graph_str1 = graph_str1 + str(step) + '[label="' + parent + '"]\n' # create dot string for graph visualization
-                    root = 1
-                    parentnum = step
-                    step = step + 1 # update graph index
-                
-                node_list1.append(node) # append node type of subplan to node_list
-
-                if "Plans" in node:
-                    
-                    for child in node['Plans']: # iterate through all childs of current node
-                        graph_str1 = graph_str1 + str(step) + '[label="' + str(child['Node Type']).replace(" ", "") + '"]\n' # create dot string for graph visualization
-                        graph_str1 = graph_str1 + str(parentnum) + '->' + str(step) + "\n" # create dot string for graph visualization
-                        step = step + 1 # update graph index
-                        q.append(child) # append child node to q
-                parentnum = parentnum + 1
-        graph_str1 = graph_str1 + '}' # close the dot string
-
-        # ====================================================================================================================================================
+        #process nodes to get node_list of all operations and to get dot string of created graph
+        graph_str1, node_list1 = process_nodes(qep1)
+        
         # Reverse the list
         node_list1.reverse()
 
@@ -125,34 +94,9 @@ with col2:
         graph_str2 = ''''''
         graph_str2 = graph_str2 + 'digraph {'
 
-        # ========================== Create node lists with node types in QEP and create dot string for graph visualization ===============================
-        q = deque([qep2])
-        step = 1
-        parentnum = 1
-        root = 0
-        while q:
-            for i in range(len(q)): # iterate through all subplans
-                node = q.popleft()
-                parent = str(node['Node Type']).replace(" ", "") # get node type of subplan
-                if root == 0:
-                    graph_str2 = graph_str2 + str(step) + '[label="' + parent + '"]\n' # create dot string for graph visualization
-                    root = 1
-                    parentnum = step
-                    step = step + 1
-                
-                node_list2.append(node) # append node type of subplan to node_list
-
-                if "Plans" in node:
-                    
-                    for child in node['Plans']: # iterate through all childs of current node
-                        graph_str2 = graph_str2 + str(step) + '[label="' + str(child['Node Type']).replace(" ", "") + '"]\n' # create dot string for graph visualization
-                        graph_str2 = graph_str2 + str(parentnum) + '->' + str(step) + "\n" # create dot string for graph visualization
-                        step = step + 1
-                        q.append(child) # append child node to q
-                parentnum = parentnum + 1
-                
-        graph_str2 = graph_str2 + '}' # close the dot string
-        # ====================================================================================================================================================
+        #process nodes to get node_list of all operations and to get dot string of created graph
+        graph_str2,node_list2 = process_nodes(qep2)
+       
         # Reverse the list
         node_list2.reverse()
 
