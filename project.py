@@ -42,4 +42,4 @@ test_conn.close()
 test_conn = None
 
 # Run app
-subprocess.run(["streamlit","run","interface_streamlit.py", "--", "--db", db, '--host', host, '--user', user, '--pwd', pwd])
+subprocess.run(["streamlit","run","interface.py", "--", "--db", db, '--host', host, '--user', user, '--pwd', pwd])
