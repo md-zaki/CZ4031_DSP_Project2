@@ -473,7 +473,25 @@ def write_differences(st, node_list1, node_list2):
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
 
-            if n['Node Type'] == 'Gather' and m['Node Type'] == 'Gather': # added by zaki 
+            if n['Node Type'] == 'Gather' and m['Node Type'] == 'Gather': # added by zaki
+                found = True
+
+            if n['Node Type'] == 'Gather Merge' and m['Node Type'] == 'Gather Merge': # added by zaki
+                found = True
+
+            if n['Node Type'] == 'Memoize' and m['Node Type'] == 'Memoize': # added by zaki
+                found = True
+            
+            if n['Node Type'] == 'WindowAgg' and m['Node Type'] == 'WindowAgg': # added by zaki
+                found = True
+
+            if n['Node Type'] == 'Materialize' and m['Node Type'] == 'Materialize': # added by zaki
+                found = True
+            
+            if n['Node Type'] == 'Unique' and m['Node Type'] == 'Unique': # added by zaki
+                found = True
+
+            if n['Node Type'] == 'Append' and m['Node Type'] == 'Append': # added by zaki
                 found = True
         if found == False:
             st.write("New step in second query (Step",n['step'] ,"): ", get_exp(n))
