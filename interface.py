@@ -49,9 +49,10 @@ def clean_query(raw_text):
         Returns:
             cleaned_text (str): cleaned input query
     """
-    # cleaned_text = raw_text.strip()  # remove leading and trailing whitespace
-    cleaned_text = " ".join(raw_text.splitlines())
-    cleaned_text = cleaned_text.strip()
+    # cleaned_text = " ".join(raw_text.splitlines())  # ensures multi-line text is properly joined
+    # cleaned_text = cleaned_text.strip()  # remove leading and trailing whitespace
+    
+    cleaned_text = raw_text.strip()  # remove leading and trailing whitespace
     cleaned_text = " ".join(cleaned_text.split())  # replace multiple spaces to single space
 
     # Replace illegal quote characters
