@@ -98,7 +98,7 @@ def get_exp(node):
             return exp
 
         case "Materialize":
-            exp = "Materialized operation was executed by taking results of previous operations and storing in physical memory for faster/easier access"
+            exp = "Materialized operation was executed by taking results step ("+ str(node['Plans'][0]['step']) +") and storing in physical memory for faster/easier access"
             return exp
         case "Subquery Scan":
             exp = "Subquery Scan was executed on results from sub operations"
@@ -315,6 +315,12 @@ def qep_diff_exp(missing1, missing2):
     return exp_str1
 
 def add_relation_details(node_list):
+    """
+        Parameters:
+            node_list (Dict): node_list which contains the operators of the QEP
+        Returns:
+            node_list (Dict): Returns the same node_list with new key 'Relations' and 'step'
+    """
     scans = ["Seq Scan", "Index Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
     step = 1
@@ -336,6 +342,13 @@ def add_relation_details(node_list):
     return node_list
 
 def identify_same_nodes(i, j):
+    """
+        Parameters:
+            i (Dict): Dictonary containing details of an operator
+            j (Dict): Dictonary containing details of an operator
+        Returns:
+            True/False (Bool) : Returns True if the 2 operators are the same, else False
+    """
     scans = ["Seq Scan", "Index Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
     if(j["Node Type"]==i["Node Type"]):
@@ -347,6 +360,9 @@ def identify_same_nodes(i, j):
                         return True
                 case "Merge Join":
                     if i["Merge Cond"] == j["Merge Cond"]:
+                        return True
+                case "Nested Loop":
+                    if check_same_list(i['Relations'], j['Relations']):
                         return True
                 
         if j["Node Type"] in scans:
@@ -371,55 +387,72 @@ def identify_same_nodes(i, j):
                 child = i["Plans"][0]
                 child1 = j["Plans"][0]
                 #if(child["Relation Name"] == child1["Relation Name"]):
-                if i['Relations'] == j['Relations']:
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']:
                     return True
             case "Sort":
-                if i['Relations'] == j['Relations'] and i['Sort Key'] == j['Sort Key']:
+                #if i['Relations'] == j['Relations'] and i['Sort Key'] == j['Sort Key']:
+                if check_same_list(i['Relations'], j['Relations'] and i['Sort Key'] == j['Sort Key']):
                     return True
             case "Group":
-                if i['Relations'] == j['Relations'] and i["Group Key"] == j["Group Key"]:
+                #if i['Relations'] == j['Relations'] and i["Group Key"] == j["Group Key"]:
+                if check_same_list(i['Relations'], j['Relations']) and i["Group Key"] == j["Group Key"]:
                     return True
             case "Aggregate":
-                if i['Relations'] == j['Relations'] and i['Strategy'] == j['Strategy']:
+                #if i['Relations'] == j['Relations'] and i['Strategy'] == j['Strategy']:
+                if check_same_list(i['Relations'], j['Relations']) and i['Strategy'] == j['Strategy']:
                     if i['Strategy'] == 'Hashed' or i['Strategy'] == 'Sorted':
                         if i['Group Key'] == j['Group Key']:
                             return True
                     elif i['Strategy'] == 'Plain':
                         return True
             case "Gather":
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "Gather Merge":
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "Memoize":
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "WindowAgg":    
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "Materialize":
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "Unique":   
-                if i['Relations'] == j['Relations']: 
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
                     return True
             case "Append":
-                if i['Relations'] == j['Relations']:
+                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']:
                     return True
         
     return False
 
+def check_same_list(list1, list2):
+    """
+        Parameters:
+            list1 (List): list of Relations
+            list2 (List): list of Relations
+        Returns:
+            True/False (Bool) : Returns True if the 2 Lists are the same, else False
+    """
+    for x in set(list1 + list2):
+        if list1.count(x) != list2.count(x):
+            return False
+    return True
+
 def write_differences(st, node_list1, node_list2):
+    """
+        Parameters:
+            st (streamlit): streamlit object
+            node_list1 (List): node_list which contains the operators of the QEP
+            node_list2 (List): node_list which contains the operators of the QEP
+    """
     scans = ["Seq Scan", "Index Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
-
-    #node_list1 = add_relation_details(node_list1)
-    #node_list2 = add_relation_details(node_list2)
                     
     new_steps = []
-
-    print('-----------------------------------------------------------------------------------------------')
  
     found = False
     for i in node_list2:    #loop through evolved query
@@ -447,7 +480,7 @@ def write_differences(st, node_list1, node_list2):
         for m in node_list1:
             n_filter = "Nothing"
             m_filter = "Nothing"
-            if n['Node Type'] in scans and m['Node Type'] in scans and n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
+            if n['Node Type'] in scans and m['Node Type'] in scans and check_same_list(n['Relations'],m['Relations']):#n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
                 found = True
                 if 'Filter' in n: n_filter = n['Filter']
                 if 'Filter' in m: m_filter = m['Filter']
@@ -467,7 +500,8 @@ def write_differences(st, node_list1, node_list2):
             #if n['Node Type'] in joins and m['Node Type'] in joins and n_join == m_join and n['Relations'] == m['Relations']:
             if n['Node Type'] in joins and m['Node Type'] in joins: #and n['Relations'] == m['Relations']:    #Finding differences for join types
                 if n['Node Type'] == 'Nested Loop' or m['Node Type'] == 'Nested Loop':
-                    if n['Relations'] == m['Relations']:
+                    #if n['Relations'] == m['Relations']:
+                    if check_same_list(n['Relations'],m['Relations']):
                         found = True
                         join_cond = n_join if n_join is not None else m_join
                         st.write("In second query (Step",n['step'] ,"), the condition ", join_cond , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], "like in the first query.")
@@ -478,7 +512,7 @@ def write_differences(st, node_list1, node_list2):
                         st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], "like in the first query.")
                         break
                         
-            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and m['Relations'] == n['Relations']:    #Finding differences for aggregate
+            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and check_same_list(m['Relations'], n['Relations']):#m['Relations'] == n['Relations']:    #Finding differences for aggregate
                 found = True
                 if n['Strategy'] == 'Hashed' or n['Strategy'] == 'Sorted':
                     m_group_key = [None]
@@ -488,11 +522,11 @@ def write_differences(st, node_list1, node_list2):
                     st.write("In second query (Step",n['step'] ,"),", n['Strategy'], "aggregation was executed instead of executing by", m['Strategy'], "aggregation like in the first query.")
                 break
 
-            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and n['Relations'] == m['Relations']:    #Find differences for grouping
+            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and check_same_list(n['Relations'], m['Relations']):#n['Relations'] == m['Relations']:    #Find differences for grouping
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the grouping is performed using keys:", n['Group Key'], "instead of ", m['Group Key'], "like in the first query.")
 
-            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and n['Relations'] == m['Relations']:
+            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and check_same_list(n['Relations'], m['Relations']):#n['Relations'] == m['Relations']:
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
 
