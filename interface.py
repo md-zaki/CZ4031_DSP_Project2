@@ -49,7 +49,9 @@ def clean_query(raw_text):
         Returns:
             cleaned_text (str): cleaned input query
     """
-    cleaned_text = raw_text.strip()  # remove leading and trailing whitespace
+    # cleaned_text = raw_text.strip()  # remove leading and trailing whitespace
+    cleaned_text = " ".join(raw_text.splitlines())
+    cleaned_text = cleaned_text.strip()
     cleaned_text = " ".join(cleaned_text.split())  # replace multiple spaces to single space
 
     # Replace illegal quote characters
@@ -73,7 +75,7 @@ with col1:
     query1 = ""
     # User input query string
     try:
-        query1 = st.text_input('Enter Original Query:')
+        query1 = st.text_input('Enter Original Query:', placeholder = 'Original SQL Query', value="")
         if query1 != "":
             query1 = clean_query(query1)
             cursor.execute(extract_qp + query1)
@@ -107,7 +109,7 @@ with col2:
     query2 = ""
     # User input query string
     try:
-        query2 = st.text_input('Enter Evolved Query:')
+        query2 = st.text_input('Enter Evolved Query:', placeholder = 'Evolved SQL Query', value="")
         if query2 != "":
             query2 = clean_query(query2)
             cursor.execute(extract_qp + query2)
@@ -181,20 +183,25 @@ with col2:
 
 
 with st.expander("How the Query Execution Plans have evolved:"):
-        st.write(changes_query)
+        
         try:
             diff_str = qep_diff_exp(missing1, missing2)
             st.subheader('Overall differences')
             st.write(diff_str)
             
         except:
-            st.success('Both queries share the same operation types')
+            st.error('Both queries share the same operation types or Query Error')
         
         try:
             st.subheader("Step by step differences")
             write_differences(st, node_list1, node_list2)
         except:
             st.error("No Differences")
+
+        try:
+            st.write(changes_query)
+        except:
+            pass
     
 
 

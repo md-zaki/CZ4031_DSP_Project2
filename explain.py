@@ -283,7 +283,7 @@ def query_diff(q1, q2):
         comp_str = comp_str + 'FROM clause, '
     if str(where_clause1) != str(where_clause2):
         comp_str = comp_str + 'WHERE clause, '
-    comp_str = comp_str + 'of the Evolved Query, '
+    comp_str = comp_str + 'of the Evolved Query '
 
     return comp_str
 
