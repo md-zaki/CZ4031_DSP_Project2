@@ -93,6 +93,7 @@ with col1:
             cursor.execute(extract_qp + query1)
             qep_list1 = cursor.fetchall()
             
+            node_list1 = add_steps(node_list1)
             node_list1 = add_relation_details(node_list1)
             # Print Explanation
             count = 1
@@ -131,6 +132,7 @@ with col2:
             cursor.execute(extract_qp + query2)
             qep_list2 = cursor.fetchall()
 
+            node_list2 = add_steps(node_list2)
             node_list2 = add_relation_details(node_list2)
             # Print Explanation
             count = 1

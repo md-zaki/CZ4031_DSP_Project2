@@ -36,7 +36,7 @@ def get_exp(node):
             return exp
         
         case "Bitmap Index Scan":
-            exp = "Bitmap Index Scan was executed on " + node['Index Name'] + " with condition of " + node['Index Cond']
+            exp = "Bitmap Index Scan was executed on Index " + node['Index Name'] + " with condition of " + node['Index Cond']
             return exp
         
         case "Hash Join":
@@ -104,7 +104,7 @@ def get_exp(node):
             exp = "Subquery Scan was executed on results from sub operations"
             return exp
         case "Unique":
-            exp = "A scan was executed on previous operations result to remove non-unique values and keep unique values"
+            exp = "A scan was executed on step ("+ str(node['Plans'][0]['step']) +") result to remove non-unique values and keep unique values"
             return exp
         
         case "Append":
@@ -314,34 +314,50 @@ def qep_diff_exp(missing1, missing2):
     
     return exp_str1
 
-def add_relation_details(node_list):
+def add_steps(node_list):
+    step = 1
+    for node in node_list:
+        node['step'] = step
+        step += 1
+    return node_list
+
+def add_relation_details(node_list):    # This function adds details of relations involved in resulting tuples
     """
         Parameters:
             node_list (Dict): node_list which contains the operators of the QEP
         Returns:
             node_list (Dict): Returns the same node_list with new key 'Relations' and 'step'
     """
-    scans = ["Seq Scan", "Index Scan"]
+    scans = ["Seq Scan", "Index Scan", "Bitmap Heap Scan", "Bitmap Index Scan", "Subquery Scan", "CTE Scan", "Function Scan", "Values Scan", "Index Only Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
-    step = 1
+    #step = 1
+    placeholder = 0
     for node in node_list:
-        if(node['Node Type'] in scans):
+        #if(node['Node Type'] in scans): #get the relation details from scans
+        if node['Node Type'] == "Bitmap Index Scan":
+            continue
+        if node['Node Type'] == "Bitmap Heap Scan":
+            node['Plans'][0]['Relations'] = [node['Relation Name']]
+        if 'Relation Name' in node: #if Relation Name exists   
             node['Relations'] = [node['Relation Name']]
-            node['step'] = step
-            step += 1
-        if(node['Node Type'] not in scans and node['Node Type'] not in joins):
+        elif 'Plans' in node: #should be a intermediate node (i.e. not leaf node, becus got children)
+            if 'Relations' in node['Plans'][0]:
+                node['Relations'] = [node['Plans'][0]['Relations']]
+        else:   #should be a leaf node without Relation Name, then we give it a placeholder relation
+            node['Relations'] = ["Placeholder" + str(placeholder)]
+            placeholder += 1
+            
+        #if(node['Node Type'] not in scans and node['Node Type'] not in joins):  #intermediate nodes get relation details from child
+        if 'Plans' in node and node['Node Type'] not in joins: #meaning it is a intermediate operator that is not a join operation
             node['Relations'] = node['Plans'][0]['Relations']
-            node['step'] = step
-            step += 1
-        if(node['Node Type'] in joins):
+        if(node['Node Type'] in joins): #node is a join operator, get relation details from both chilren
             temp_relation = node['Plans'][0]['Relations']
             temp_relation1 = node['Plans'][1]['Relations']
             node['Relations'] = temp_relation+temp_relation1
-            node['step'] = step
-            step += 1
+        
     return node_list
 
-def identify_same_nodes(i, j):
+def identify_same_nodes(i, j):  #This function determines whether 2 operators are the same and returns True/False
     """
         Parameters:
             i (Dict): Dictonary containing details of an operator
@@ -349,87 +365,64 @@ def identify_same_nodes(i, j):
         Returns:
             True/False (Bool) : Returns True if the 2 operators are the same, else False
     """
-    scans = ["Seq Scan", "Index Scan"]
-    joins = ["Hash Join", "Nested Loop", "Merge Join"]
+ 
     if(j["Node Type"]==i["Node Type"]):
-
-        if j["Node Type"] in joins:
-            match j["Node Type"]:
-                case "Hash Join":
-                    if i["Hash Cond"] == j["Hash Cond"]:
-                        return True
-                case "Merge Join":
-                    if i["Merge Cond"] == j["Merge Cond"]:
-                        return True
-                case "Nested Loop":
-                    if check_same_list(i['Relations'], j['Relations']):
-                        return True
-                
-        if j["Node Type"] in scans:
-            match j["Node Type"]:
-                case "Seq Scan":
-                    j_filter = None
-                    i_filter = None
-                    if 'Filter' in j: j_filter = j['Filter']
-                    if 'Filter' in i: i_filter = i['Filter']
-                    if i["Relation Name"] == j["Relation Name"] and j_filter==i_filter:
-                        return True
-                case "Index Scan":
-                    j_filter = None
-                    i_filter = None
-                    if 'Filter' in j: j_filter = j['Filter']
-                    if 'Filter' in i: i_filter = i['Filter']
-                    if i["Index Name"] == j["Index Name"] and i["Index Cond"] == j["Index Cond"] and j_filter==i_filter:
-                        return True
-                    
+                  
         match j["Node Type"]:
+            case "Seq Scan":
+                j_filter = None
+                i_filter = None
+                if 'Filter' in j: j_filter = j['Filter']
+                if 'Filter' in i: i_filter = i['Filter']
+                if i["Relation Name"] == j["Relation Name"] and j_filter==i_filter:
+                    return True
+            case "Index Scan":
+                j_filter = None
+                i_filter = None
+                if 'Filter' in j: j_filter = j['Filter']
+                if 'Filter' in i: i_filter = i['Filter']
+                if i["Index Name"] == j["Index Name"] and i["Index Cond"] == j["Index Cond"] and j_filter==i_filter:
+                    return True
+            case "Bitmap Index Scan":
+                if check_same_list(i['Relations'], j['Relations']) and i['Index Cond'] == j['Index Cond'] and i['Index Name'] == j['Index Name']:
+                    return True
+            case "Bitmap Heap Scan":
+                if i['Relation Name'] == j['Relation Name']:
+                    return True
+
+            case "Hash Join":
+                if i["Hash Cond"] == j["Hash Cond"]:
+                    return True
+            case "Merge Join":
+                if i["Merge Cond"] == j["Merge Cond"]:
+                    return True
+            case "Nested Loop":
+                if check_same_list(i['Relations'], j['Relations']):
+                    return True
+
             case "Hash":
-                child = i["Plans"][0]
-                child1 = j["Plans"][0]
-                #if(child["Relation Name"] == child1["Relation Name"]):
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']:
+                if check_same_list(i['Relations'], j['Relations']):
                     return True
             case "Sort":
-                #if i['Relations'] == j['Relations'] and i['Sort Key'] == j['Sort Key']:
-                if check_same_list(i['Relations'], j['Relations'] and i['Sort Key'] == j['Sort Key']):
+                if check_same_list(i['Relations'], j['Relations']) and i['Sort Key'] == j['Sort Key']:
                     return True
             case "Group":
-                #if i['Relations'] == j['Relations'] and i["Group Key"] == j["Group Key"]:
                 if check_same_list(i['Relations'], j['Relations']) and i["Group Key"] == j["Group Key"]:
                     return True
             case "Aggregate":
-                #if i['Relations'] == j['Relations'] and i['Strategy'] == j['Strategy']:
                 if check_same_list(i['Relations'], j['Relations']) and i['Strategy'] == j['Strategy']:
                     if i['Strategy'] == 'Hashed' or i['Strategy'] == 'Sorted':
                         if i['Group Key'] == j['Group Key']:
                             return True
                     elif i['Strategy'] == 'Plain':
                         return True
-            case "Gather":
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
+            case _:
+                if check_same_list(i['Relations'], j['Relations']): #if none of the operators match the switch statement, just check if involved relations are the same
                     return True
-            case "Gather Merge":
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
-                    return True
-            case "Memoize":
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
-                    return True
-            case "WindowAgg":    
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
-                    return True
-            case "Materialize":
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
-                    return True
-            case "Unique":   
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']: 
-                    return True
-            case "Append":
-                if check_same_list(i['Relations'], j['Relations']):#i['Relations'] == j['Relations']:
-                    return True
-        
+
     return False
 
-def check_same_list(list1, list2):
+def check_same_list(list1, list2): #This function checks if 2 lists are the same regardless of order
     """
         Parameters:
             list1 (List): list of Relations
@@ -442,14 +435,14 @@ def check_same_list(list1, list2):
             return False
     return True
 
-def write_differences(st, node_list1, node_list2):
+def write_differences(st, node_list1, node_list2): #This function Identifies what changed in the new/evolved operators and display the differences
     """
         Parameters:
             st (streamlit): streamlit object
             node_list1 (List): node_list which contains the operators of the QEP
             node_list2 (List): node_list which contains the operators of the QEP
     """
-    scans = ["Seq Scan", "Index Scan"]
+    scans = ["Seq Scan", "Index Scan", "Bitmap Heap Scan", "Subquery Scan", "Function Scan", "Values Scan", "Index Only Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
                     
     new_steps = []
@@ -468,27 +461,32 @@ def write_differences(st, node_list1, node_list2):
             found = False
             new_steps.append(i)
 
-    # for n in new_steps:
-    #     print(n)
-
-    # for h in node_list2:
-    #     print(h,"\n")
-
     found = False
     for n in new_steps:
         found = False
         for m in node_list1:
             n_filter = "Nothing"
             m_filter = "Nothing"
-            if n['Node Type'] in scans and m['Node Type'] in scans and check_same_list(n['Relations'],m['Relations']):#n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
+            print("----------------------TESTING ENTER------------------------", n['Node Type'], m['Node Type'])
+            #condition to avoid error for unsupported operations like CTE scan
+            # if n['Node Type'] in scans and m['Node Type'] in scans and ('Relation Name' not in n or 'Relation Name' not in m or 'Plans' in n or 'Plans' in m):
+            #     if(n['Node Type'] != 'Bitmap Heap Scan' and m['Node Type'] != 'Bitmap Heap Scan'):
+            #         continue
+            if n['Node Type'] in scans and m['Node Type'] in scans and n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
                 found = True
                 if 'Filter' in n: n_filter = n['Filter']
                 if 'Filter' in m: m_filter = m['Filter']
-                if n['Node Type'] == m['Node Type']: #if they are the same type of scans e.g seq scan
+                if n['Node Type'] == m['Node Type']: #if they are the same type of scans e.g seq scan, but they differ by filter
                     st.write("In second query (Step",n['step'] ,"), relation ", n['Relation Name'], "is filtered by ", n_filter, "instead of being filterd by", m_filter, " in the first query.")
                     break
-                else:
+                else: # they differ by scan algorithm
                     st.write("In second query (Step",n['step'] ,"), relation ", n['Relation Name'], "is scanned using", n['Node Type'], "instead of ", m['Node Type'], "and filtered by ", n_filter, ".")
+                    break
+
+            if n['Node Type'] == 'Bitmap Index Scan' and m['Node Type'] == 'Bitmap Index Scan':
+                if check_same_list(n['Relations'], m['Relations']) and n['Index Name'] == m['Index Name']:
+                    found = True
+                    st.write("In second query (Step",n['step'] ,"), Bitmap Index Scan was executed on", n['Index Name'], "with condition of", n['Index Cond'], "instead of", m['Index Cond'], "like in first query.")
                     break
 
             n_join = None
@@ -497,10 +495,8 @@ def write_differences(st, node_list1, node_list2):
             if 'Hash Cond' in n: n_join = n["Hash Cond"]
             if 'Merg Cond' in m: m_join = m["Merg Cond"]
             if 'Hash Cond' in m: m_join = m["Hash Cond"]
-            #if n['Node Type'] in joins and m['Node Type'] in joins and n_join == m_join and n['Relations'] == m['Relations']:
-            if n['Node Type'] in joins and m['Node Type'] in joins: #and n['Relations'] == m['Relations']:    #Finding differences for join types
+            if n['Node Type'] in joins and m['Node Type'] in joins:   #Finding differences for join types
                 if n['Node Type'] == 'Nested Loop' or m['Node Type'] == 'Nested Loop':
-                    #if n['Relations'] == m['Relations']:
                     if check_same_list(n['Relations'],m['Relations']):
                         found = True
                         join_cond = n_join if n_join is not None else m_join
