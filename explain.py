@@ -314,7 +314,7 @@ def qep_diff_exp(missing1, missing2):
     
     return exp_str1
 
-def add_steps(node_list):
+def add_steps(node_list): # This function adds the step number to each node
     step = 1
     for node in node_list:
         node['step'] = step
@@ -328,12 +328,9 @@ def add_relation_details(node_list):    # This function adds details of relation
         Returns:
             node_list (Dict): Returns the same node_list with new key 'Relations' and 'step'
     """
-    scans = ["Seq Scan", "Index Scan", "Bitmap Heap Scan", "Bitmap Index Scan", "Subquery Scan", "CTE Scan", "Function Scan", "Values Scan", "Index Only Scan"]
     joins = ["Hash Join", "Nested Loop", "Merge Join"]
-    #step = 1
     placeholder = 0
     for node in node_list:
-        #if(node['Node Type'] in scans): #get the relation details from scans
         if node['Node Type'] == "Bitmap Index Scan":
             continue
         if node['Node Type'] == "Bitmap Heap Scan":
@@ -347,7 +344,6 @@ def add_relation_details(node_list):    # This function adds details of relation
             node['Relations'] = ["Placeholder" + str(placeholder)]
             placeholder += 1
             
-        #if(node['Node Type'] not in scans and node['Node Type'] not in joins):  #intermediate nodes get relation details from child
         if 'Plans' in node and node['Node Type'] not in joins: #meaning it is a intermediate operator that is not a join operation
             node['Relations'] = node['Plans'][0]['Relations']
         if(node['Node Type'] in joins): #node is a join operator, get relation details from both chilren
@@ -467,11 +463,6 @@ def write_differences(st, node_list1, node_list2): #This function Identifies wha
         for m in node_list1:
             n_filter = "Nothing"
             m_filter = "Nothing"
-            # print("----------------------TESTING ENTER------------------------", n['Node Type'], m['Node Type'])
-            #condition to avoid error for unsupported operations like CTE scan
-            # if n['Node Type'] in scans and m['Node Type'] in scans and ('Relation Name' not in n or 'Relation Name' not in m or 'Plans' in n or 'Plans' in m):
-            #     if(n['Node Type'] != 'Bitmap Heap Scan' and m['Node Type'] != 'Bitmap Heap Scan'):
-            #         continue
             if n['Node Type'] in scans and m['Node Type'] in scans and n['Relation Name'] == m['Relation Name']: #if the nodes are both scans on the same relation, find differences
                 found = True
                 if 'Filter' in n: n_filter = n['Filter']
@@ -508,7 +499,7 @@ def write_differences(st, node_list1, node_list2): #This function Identifies wha
                         st.write("In second query (Step",n['step'] ,"), the condition ", n_join , "is joined using ", n['Node Type'], "instead of being joined by", m['Node Type'], "like in the first query.")
                         break
                         
-            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and check_same_list(m['Relations'], n['Relations']):#m['Relations'] == n['Relations']:    #Finding differences for aggregate
+            if n['Node Type'] == 'Aggregate' and m['Node Type'] == 'Aggregate' and check_same_list(m['Relations'], n['Relations']):    #Finding differences for aggregate
                 found = True
                 if n['Strategy'] == 'Hashed' or n['Strategy'] == 'Sorted':
                     m_group_key = [None]
@@ -518,11 +509,11 @@ def write_differences(st, node_list1, node_list2): #This function Identifies wha
                     st.write("In second query (Step",n['step'] ,"),", n['Strategy'], "aggregation was executed instead of executing by", m['Strategy'], "aggregation like in the first query.")
                 break
 
-            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and check_same_list(n['Relations'], m['Relations']):#n['Relations'] == m['Relations']:    #Find differences for grouping
+            if n['Node Type'] == 'Group' and m['Node Type'] == 'Group' and check_same_list(n['Relations'], m['Relations']):    #Find differences for grouping
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the grouping is performed using keys:", n['Group Key'], "instead of ", m['Group Key'], "like in the first query.")
 
-            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and check_same_list(n['Relations'], m['Relations']):#n['Relations'] == m['Relations']:
+            if n['Node Type'] == 'Sort' and m['Node Type'] == 'Sort' and check_same_list(n['Relations'], m['Relations']):
                 found = True
                 st.write("In second query (Step",n['step'] ,"), the sorting is performed using keys:", n['Sort Key'], "instead of ", m['Sort Key'], "like in the first query.")
 
