@@ -467,7 +467,7 @@ def write_differences(st, node_list1, node_list2): #This function Identifies wha
         for m in node_list1:
             n_filter = "Nothing"
             m_filter = "Nothing"
-            print("----------------------TESTING ENTER------------------------", n['Node Type'], m['Node Type'])
+            # print("----------------------TESTING ENTER------------------------", n['Node Type'], m['Node Type'])
             #condition to avoid error for unsupported operations like CTE scan
             # if n['Node Type'] in scans and m['Node Type'] in scans and ('Relation Name' not in n or 'Relation Name' not in m or 'Plans' in n or 'Plans' in m):
             #     if(n['Node Type'] != 'Bitmap Heap Scan' and m['Node Type'] != 'Bitmap Heap Scan'):
