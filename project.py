@@ -7,23 +7,24 @@ userDefault = 'postgres'
 
 # Use a test connection to validate input for postgresql authentication
 test_conn = None
+print("============================== Connecting to PostgreSQL ==================================")
 while not test_conn:
-    print("Enter the name of the database that you want to connect: (Leave empty for default = postgres)")
+    print("Enter the database name that you want to connect to (dbname): (Leave empty for default = postgres)")
     db = input()
     if db == '':
         db = dbDefault
 
-    print("Enter the database server address e.g., localhost or an IP address: (Leave empty for default = localhost)" )
+    print("Enter the database server address e.g., localhost or an IP address (host): (Leave empty for default = localhost)" )
     host = input()
     if host == '':
         host = hostDefault
 
-    print("Enter the username used to authenticate: (Leave empty for default = postgres)")
+    print("Enter the username used to authenticate to postgresql (username): (Leave empty for default = postgres)")
     user = input()
     if user == '':
         user = userDefault
 
-    print("Enter the password used to authenticate:")
+    print("Enter the password used to authenticate to postgresql (password):")
     pwd = input()
 
     try:
